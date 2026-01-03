@@ -1,0 +1,13 @@
+{
+  "name": "12soat-oficina-lambda-auth",
+  "version": "1.0.0",
+  "description": "Lambda function para autenticação via CPF",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
+  }
+}
