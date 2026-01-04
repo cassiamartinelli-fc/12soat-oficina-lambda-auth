@@ -108,10 +108,4 @@ resource "aws_lambda_permission" "allow_function_url" {
   principal     = "*"
 
   function_url_auth_type = "NONE"
-
-  condition {
-    test     = "StringEquals"
-    variable = "aws:SourceArn"
-    values   = [aws_lambda_function_url.auth_url.function_url]
-  }
 }
