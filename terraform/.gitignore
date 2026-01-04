@@ -1,0 +1,13 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+
+# Lambda package
+lambda-auth.zip
+
+# Secrets
+.env

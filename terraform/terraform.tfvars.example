@@ -1,0 +1,13 @@
+# ========================================
+# Exemplo de variáveis Terraform
+# Copie para terraform.tfvars e preencha
+# ========================================
+
+aws_region = "us-east-1"
+
+lambda_function_name = "oficina-mecanica-auth"
+
+# IMPORTANTE: NÃO commite terraform.tfvars com valores reais!
+# Use este arquivo apenas como exemplo
+neon_database_url = "postgresql://user:password@host/db"
+jwt_secret        = "seu-secret-aqui"
