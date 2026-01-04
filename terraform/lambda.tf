@@ -102,15 +102,10 @@ resource "aws_lambda_function_url" "auth_url" {
 
 # Permitir invocação pública via Function URL
 resource "aws_lambda_permission" "allow_function_url" {
-  statement_id           = "AllowPublicFunctionURLInvoke"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.auth_lambda.function_name
-  principal              = "*"
+  statement_id  = "AllowPublicFunctionURLInvoke"
+  action        = "lambda:InvokeFunctionUrl"
+  function_name = aws_lambda_function.auth_lambda.function_name
+  principal     = "*"
+
   function_url_auth_type = "NONE"
 }
-
-# ========================================
-# CloudWatch Logs
-# ========================================
-# Nota: Log Group é criado automaticamente pela Lambda
-# quando ela executa pela primeira vez (AWSLambdaBasicExecutionRole permite)
