@@ -48,12 +48,12 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "auth_lambda" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = var.lambda_function_name
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "index.handler"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "index.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  memory_size     = 256
+  runtime          = "nodejs20.x"
+  timeout          = 30
+  memory_size      = 256
 
   environment {
     variables = {
@@ -82,7 +82,7 @@ resource "aws_lambda_function_url" "auth_url" {
     allow_origins     = ["*"]
     allow_methods     = ["POST"]
     allow_headers     = ["content-type"]
-    max_age          = 86400
+    max_age           = 86400
   }
 }
 
