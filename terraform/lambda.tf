@@ -87,15 +87,7 @@ resource "aws_lambda_function_url" "auth_url" {
 }
 
 # ========================================
-# CloudWatch Log Group
+# CloudWatch Logs
 # ========================================
-
-resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/${var.lambda_function_name}"
-  retention_in_days = 7
-
-  tags = {
-    Name        = "Oficina Mecânica - Auth Logs"
-    Environment = "production"
-  }
-}
+# Nota: Log Group é criado automaticamente pela Lambda
+# quando ela executa pela primeira vez (AWSLambdaBasicExecutionRole permite)
