@@ -94,10 +94,19 @@ resource "aws_lambda_function_url" "auth_url" {
   cors {
     allow_credentials = false
     allow_origins     = ["*"]
-    allow_methods     = ["POST"]
-    allow_headers     = ["content-type"]
+    allow_methods     = ["POST", "OPTIONS"]
+    allow_headers     = ["content-type", "authorization"]
     max_age           = 86400
   }
+}
+
+# Permitir invocação pública via Function URL
+resource "aws_lambda_permission" "allow_function_url" {
+  statement_id           = "AllowPublicFunctionURLInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.auth_lambda.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
 }
 
 # ========================================
