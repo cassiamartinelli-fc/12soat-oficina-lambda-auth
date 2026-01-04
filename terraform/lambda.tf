@@ -37,8 +37,22 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../src"
+  source_dir  = "${path.module}/../"
   output_path = "${path.module}/lambda-auth.zip"
+
+  excludes = [
+    "terraform",
+    ".terraform",
+    ".git",
+    ".github",
+    "*.md",
+    "*.sql",
+    "test-local.js",
+    ".env",
+    ".env.example",
+    ".gitignore",
+    "LICENSE"
+  ]
 }
 
 # ========================================
@@ -49,7 +63,7 @@ resource "aws_lambda_function" "auth_lambda" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = var.lambda_function_name
   role             = aws_iam_role.lambda_role.arn
-  handler          = "index.handler"
+  handler          = "src/index.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime          = "nodejs20.x"
   timeout          = 30
