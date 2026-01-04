@@ -26,8 +26,8 @@ Autenticar clientes da oficina mecânica através do CPF, validando sua existên
 src/
   └── index.js              # Handler da Lambda (validação CPF + JWT)
 terraform/
-  ├── main.tf               # Provider AWS
-  ├── lambda.tf             # Configuração da Lambda
+  ├── main.tf               # Provider AWS + S3 Backend
+  ├── lambda.tf             # Lambda + IAM Role + Function URL
   ├── variables.tf          # Variáveis
   └── outputs.tf            # Outputs (URL da Lambda)
 .github/workflows/
@@ -35,9 +35,29 @@ terraform/
   └── deploy.yml            # Deploy automático (main)
 ```
 
+### **Infraestrutura criada pelo Terraform:**
+- AWS Lambda Function (`oficina-mecanica-auth`)
+- IAM Role com permissões básicas
+- Lambda Function URL (acesso público via HTTPS)
+- Estado armazenado em S3 (`s3://12soat-terraform-state-lambda`)
+
 ---
 
 ## 🚀 Deploy
+
+### **Pré-requisito: Bucket S3 para Terraform State**
+
+O estado do Terraform é armazenado em S3. Crie o bucket **UMA ÚNICA VEZ**:
+
+```bash
+aws s3api create-bucket \
+  --bucket 12soat-terraform-state-lambda \
+  --region us-east-1
+```
+
+Ou via Console AWS: https://s3.console.aws.amazon.com/s3/
+
+---
 
 ### **Automático (via GitHub Actions)**
 
@@ -74,14 +94,15 @@ Configure no GitHub: **Settings → Secrets → Actions**
 
 ### **Endpoint da Lambda**
 ```
-POST https://7w53qn35x4csqlq6mmsni74dn40wexit.lambda-url.us-east-1.on.aws/
+POST https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/
 ```
 
 ### **Teste 1: CPF válido (200 OK)**
 ```bash
-curl -X POST "https://7w53qn35x4csqlq6mmsni74dn40wexit.lambda-url.us-east-1.on.aws/" \
+curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/" \
   -H "Content-Type: application/json" \
-  -d '{"cpf":"12345678900"}'
+  -d '{"cpf":"12345678900"}' \
+  -w "\nHTTP Status: %{http_code}\n"
 ```
 
 **Resposta:**
@@ -97,9 +118,10 @@ curl -X POST "https://7w53qn35x4csqlq6mmsni74dn40wexit.lambda-url.us-east-1.on.a
 
 ### **Teste 2: CPF não cadastrado (404)**
 ```bash
-curl -X POST "https://7w53qn35x4csqlq6mmsni74dn40wexit.lambda-url.us-east-1.on.aws/" \
+curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/" \
   -H "Content-Type: application/json" \
-  -d '{"cpf":"99999999999"}'
+  -d '{"cpf":"99999999999"}' \
+  -w "\nHTTP Status: %{http_code}\n"
 ```
 
 **Resposta:**
@@ -109,9 +131,10 @@ curl -X POST "https://7w53qn35x4csqlq6mmsni74dn40wexit.lambda-url.us-east-1.on.a
 
 ### **Teste 3: CPF inválido (400)**
 ```bash
-curl -X POST "https://7w53qn35x4csqlq6mmsni74dn40wexit.lambda-url.us-east-1.on.aws/" \
+curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/" \
   -H "Content-Type: application/json" \
-  -d '{"cpf":"123"}'
+  -d '{"cpf":"123"}' \
+  -w "\nHTTP Status: %{http_code}\n"
 ```
 
 **Resposta:**
