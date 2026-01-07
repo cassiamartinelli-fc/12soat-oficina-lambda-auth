@@ -13,7 +13,7 @@ Autenticar clientes da oficina mecânica através do CPF, validando sua existên
 ## 🛠️ Tecnologias
 
 - **AWS Lambda** - Execução serverless (Node.js 20)
-- **Neon PostgreSQL** - Banco de dados gerenciado (free tier)
+- **Neon PostgreSQL** - Banco de dados gerenciado
 - **Terraform** - Infraestrutura como código
 - **GitHub Actions** - CI/CD automático
 - **JWT** - Geração de tokens de autenticação
@@ -43,11 +43,24 @@ terraform/
 
 ---
 
-## 🚀 Deploy
+## 🚀 Setup e Deploy
 
-### **Pré-requisito: Bucket S3 para Terraform State**
+### **Pré-requisitos**
 
-O estado do Terraform é armazenado em S3. Crie o bucket **UMA ÚNICA VEZ**:
+**Ferramentas locais:**
+- AWS CLI configurado com credenciais válidas
+- Terraform instalado
+
+**Infraestrutura e dados:**
+- **Banco Neon PostgreSQL** criado → [12soat-oficina-infra-database](https://github.com/<usuario>/12soat-oficina-infra-database)
+- **Aplicação NestJS** rodada pelo menos uma vez → [12soat-oficina-app](https://github.com/<usuario>/12soat-oficina-app)
+  - Isso garante que a tabela `clientes` existe no banco
+- **Pelo menos um cliente cadastrado** via API
+  - A Lambda consulta a tabela `clientes` para validar CPF
+
+### **1. Criar Bucket S3 para Terraform State**
+
+Execute **UMA ÚNICA VEZ** (se ainda não existir):
 
 ```bash
 aws s3api create-bucket \
@@ -55,17 +68,7 @@ aws s3api create-bucket \
   --region us-east-1
 ```
 
-Ou via Console AWS: https://s3.console.aws.amazon.com/s3/
-
----
-
-### **Automático (via GitHub Actions)**
-
-1. Fazer merge na branch `main`
-2. GitHub Actions executa deploy automaticamente
-3. Lambda atualizada em ~2 minutos
-
-### **Manual (via Terraform)**
+### **2. Deploy da Lambda**
 
 ```bash
 cd terraform
@@ -74,6 +77,21 @@ terraform apply \
   -var="neon_database_url=$NEON_DATABASE_URL" \
   -var="jwt_secret=$JWT_SECRET"
 ```
+
+**Após o deploy**, copie a **Lambda Function URL** do output:
+```
+Outputs:
+lambda_function_url = "https://xxxxx.lambda-url.us-east-1.on.aws/"
+```
+
+> ⚠️ **Guarde essa URL!** Você precisará dela para configurar o Kong Gateway.
+
+### **3. Deploy Automático (atualizações futuras)**
+
+Após o primeiro deploy manual:
+1. Push na branch `main`
+2. GitHub Actions executa deploy automaticamente
+3. Lambda atualizada em ~2 minutos
 
 ---
 
