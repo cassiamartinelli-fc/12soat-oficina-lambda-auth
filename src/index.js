@@ -56,6 +56,7 @@ exports.handler = async (event) => {
 
     const token = jwt.sign(
       {
+        key: process.env.JWT_SECRET, // Para validação Kong JWT
         id: cliente.id,
         cpf: cliente.cpfCnpj,
         nome: cliente.nome,
