@@ -1,166 +1,97 @@
-# Lambda de Autenticação - Oficina Mecânica
+# Oficina Mecânica — Lambda de Autenticação
 
-Function serverless para autenticação de clientes via CPF, consultando o banco Neon PostgreSQL e retornando token JWT.
-
----
+Function serverless para autenticação de clientes via CPF, retornando token JWT.
 
 ## 🎯 Propósito
 
-Autenticar clientes da oficina mecânica através do CPF, validando sua existência no banco de dados e gerando um token JWT válido por 24h para acesso às APIs protegidas.
-
----
+Autenticar clientes através do CPF, validando no Neon PostgreSQL e gerando token JWT com validade de 24h para acesso às APIs protegidas.
 
 ## 🛠️ Tecnologias
 
-- **AWS Lambda** - Execução serverless (Node.js 20)
-- **Neon PostgreSQL** - Banco de dados gerenciado
-- **Terraform** - Infraestrutura como código
-- **GitHub Actions** - CI/CD automático
-- **JWT** - Geração de tokens de autenticação
+- **AWS Lambda** — Execução serverless (Node.js 20)
+- **Neon PostgreSQL** — Banco de dados gerenciado
+- **Terraform** — Infraestrutura como código
+- **GitHub Actions** — CI/CD automático
+- **JWT** — Geração de tokens de autenticação
 
----
-
-## 📁 Estrutura do Projeto
+## 📁 Estrutura
 
 ```
-src/
-  └── index.js              # Handler da Lambda (validação CPF + JWT)
-terraform/
-  ├── main.tf               # Provider AWS + S3 Backend
-  ├── lambda.tf             # Lambda + IAM Role + Function URL
-  ├── variables.tf          # Variáveis
-  └── outputs.tf            # Outputs (URL da Lambda)
-.github/workflows/
-  ├── ci.yml                # Validação (PRs)
-  └── deploy.yml            # Deploy automático (main)
+src/index.js      # Handler: valida CPF + gera JWT
+terraform/        # AWS Lambda + Function URL + IAM
+.github/workflows # CI/CD
 ```
 
-### **Infraestrutura criada pelo Terraform:**
-- AWS Lambda Function (`oficina-mecanica-auth`)
-- IAM Role com permissões básicas
-- Lambda Function URL (acesso público via HTTPS)
-- Estado armazenado em S3 (`s3://12soat-terraform-state-lambda`)
+## 🚀 Setup
 
----
+A Lambda de autenticação é deployada via GitHub Actions ou Terraform.
 
-## 🚀 Setup e Deploy
+**Para obter URL da Lambda:**
 
-### **Pré-requisitos**
+Execute `terraform output lambda_function_url` no diretório `terraform/` ou verifique os logs do último workflow de deploy.
 
-**Ferramentas locais:**
-- AWS CLI configurado com credenciais válidas
-- Terraform instalado
+⚠️ **Quando a Lambda não está disponível:**
+- Lambda nunca foi deployada (primeira execução do projeto)
+- Lambda foi deletada com `terraform destroy`
+- Secrets ausentes ou incorretos
+- Permissões IAM incorretas
 
-**Infraestrutura e dados:**
-- **Banco Neon PostgreSQL** criado → [12soat-oficina-infra-database](https://github.com/<usuario>/12soat-oficina-infra-database)
-- **Aplicação NestJS** rodada pelo menos uma vez → [12soat-oficina-app](https://github.com/<usuario>/12soat-oficina-app)
-  - Isso garante que a tabela `clientes` existe no banco
-- **Pelo menos um cliente cadastrado** via API
-  - A Lambda consulta a tabela `clientes` para validar CPF
+**Para deployar:**
 
-### **1. Criar Bucket S3 para Terraform State**
+### Deploy Automático (Recomendado)
 
-Execute **UMA ÚNICA VEZ** (se ainda não existir):
+Push na branch `main` → GitHub Actions faz deploy automaticamente.
+
+**Workflow:** `.github/workflows/cd.yml`
+
+### Deploy Manual
 
 ```bash
-aws s3api create-bucket \
-  --bucket 12soat-terraform-state-lambda \
-  --region us-east-1
-```
+# 1. Criar bucket S3 para Terraform state (executar UMA VEZ)
+aws s3api create-bucket --bucket 12soat-terraform-state-lambda --region us-east-1
 
-### **2. Deploy da Lambda**
-
-```bash
+# 2. Configurar variáveis
 cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Editar terraform.tfvars com NEON_DATABASE_URL e JWT_SECRET
+
+# 3. Deploy
 terraform init
-terraform apply \
-  -var="neon_database_url=$NEON_DATABASE_URL" \
-  -var="jwt_secret=$JWT_SECRET"
+terraform apply
+
+# 4. Obter URL da Lambda
+terraform output lambda_function_url
 ```
 
-**Após o deploy**, copie a **Lambda Function URL** do output:
-```
-Outputs:
-lambda_function_url = "https://xxxxx.lambda-url.us-east-1.on.aws/"
-```
+## 🔐 CI/CD — Secrets e permissões
 
-> ⚠️ **Guarde essa URL!** Você precisará dela para configurar o Kong Gateway.
+✅ **Todos os secrets já estão devidamente configurados neste repositório.**
 
-### **3. Deploy Automático (atualizações futuras)**
+**Secrets necessários (Settings → Secrets → Actions):**
+- `NEON_DATABASE_URL` — Connection string PostgreSQL
+- `JWT_SECRET` — Secret para geração de tokens
+- `AWS_ACCESS_KEY_ID` — AWS Access Key
+- `AWS_SECRET_ACCESS_KEY` — AWS Secret Key
 
-Após o primeiro deploy manual:
-1. Push na branch `main`
-2. GitHub Actions executa deploy automaticamente
-3. Lambda atualizada em ~2 minutos
+**Para replicar em sua própria conta:** Ver `terraform/terraform.tfvars.example` para variáveis necessárias.
 
----
+## 🧪 Validação
 
-## 🔐 Secrets Necessários
-
-Configure no GitHub: **Settings → Secrets → Actions**
-
-| Secret | Descrição |
-|--------|-----------|
-| `NEON_DATABASE_URL` | Connection string do Neon PostgreSQL |
-| `JWT_SECRET` | Secret para geração de tokens JWT |
-| `AWS_ACCESS_KEY_ID` | Credencial AWS para deploy |
-| `AWS_SECRET_ACCESS_KEY` | Credencial AWS para deploy |
-
----
-
-## 🧪 Como Testar
-
-### **Endpoint da Lambda**
-```
-POST https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/
-```
-
-### **Teste 1: CPF válido (200 OK)**
 ```bash
-curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/" \
+# 1. Obter URL da Lambda
+cd terraform
+terraform output -raw lambda_function_url
+
+# 2. Testar autenticação
+curl -X POST "<URL_OBTIDA>" \
   -H "Content-Type: application/json" \
-  -d '{"cpf":"12345678900"}' \
-  -w "\nHTTP Status: %{http_code}\n"
+  -d '{"cpf":"12345678900"}'
 ```
 
-**Resposta:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "cliente": {
-    "id": "b746aec4-455c-49b3-bcc2-838e2fb46f01",
-    "nome": "João Silva"
-  }
-}
-```
-
-### **Teste 2: CPF não cadastrado (404)**
-```bash
-curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/" \
-  -H "Content-Type: application/json" \
-  -d '{"cpf":"99999999999"}' \
-  -w "\nHTTP Status: %{http_code}\n"
-```
-
-**Resposta:**
-```json
-{"error": "Cliente não encontrado"}
-```
-
-### **Teste 3: CPF inválido (400)**
-```bash
-curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.aws/" \
-  -H "Content-Type: application/json" \
-  -d '{"cpf":"123"}' \
-  -w "\nHTTP Status: %{http_code}\n"
-```
-
-**Resposta:**
-```json
-{"error": "CPF inválido"}
-```
-
----
+**Respostas esperadas:**
+- **200 OK**: `{"token": "eyJ...", "cliente": {"id": "...", "nome": "..."}}`
+- **404 Not Found**: `{"error": "Cliente não encontrado"}`
+- **400 Bad Request**: `{"error": "CPF inválido"}`
 
 ## 📊 Arquitetura
 
@@ -190,37 +121,12 @@ curl -X POST "https://gazxy4ae3ittomlpjso27mbuni0popxn.lambda-url.us-east-1.on.a
     └──────────────────┘
 ```
 
----
 
-## 📝 Payload da API
+## 🔗 Repositórios Relacionados
 
-### **Request**
-```json
-{
-  "cpf": "12345678900"
-}
-```
-
-### **Response (200)**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjxVVUlEPiIsImNwZiI6IjEyMzQ1Njc4OTAwIiwibm9tZSI6Ikpvw6NvIFNpbHZhIiwiaWF0IjoxNzY3NDk5ODE1LCJleHAiOjE3Njc1ODYyMTV9.xxx",
-  "cliente": {
-    "id": "b746aec4-455c-49b3-bcc2-838e2fb46f01",
-    "nome": "João Silva"
-  }
-}
-```
-
----
-
-## 🔗 Recursos
-
-- **Lambda Console**: https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions/oficina-mecanica-auth
-- **CloudWatch Logs**: https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups/log-group/$252Faws$252Flambda$252Foficina-mecanica-auth
-- **Collection Postman**: [Em desenvolvimento]
-
----
+- [12soat-oficina-app](https://github.com/cassiamartinelli-fc/12soat-oficina-app)
+- [12soat-oficina-infra-database](https://github.com/cassiamartinelli-fc/12soat-oficina-infra-database)
+- [12soat-oficina-infra-k8s](https://github.com/cassiamartinelli-fc/12soat-oficina-infra-k8s)
 
 ## 📄 Licença
 
